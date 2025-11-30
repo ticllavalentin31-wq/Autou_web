@@ -1,7 +1,9 @@
+import os
 import streamlit as st
 import pandas as pd
 import joblib
-
+st.write("📂 Archivos detectados en la carpeta actual:")
+st.write(os.listdir()) # Esto imprimirá la lista real de archivos que ve la App
 st.set_page_config(page_title="Predicción Avanzada Autos", page_icon="🏎")
 
 # 1. Cargar Modelo
