@@ -1,1 +1,5 @@
-404: Not Found
+streamlit
+pandas
+numpy
+scikit-learn
+joblib
