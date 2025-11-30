@@ -2,78 +2,70 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# --- CONFIGURACIÓN DE LA PÁGINA ---
-st.set_page_config(page_title="Predicción Precio Autos", page_icon="🚗")
+st.set_page_config(page_title="Predicción Avanzada Autos", page_icon="🏎")
 
-# --- 1. CARGAR EL MODELO ---
+# 1. Cargar Modelo
 @st.cache_resource
 def load_model():
-    # Asegúrate de que el nombre coincida con tu archivo en GitHub
-    return joblib.load('modelo_autos.pkl')
+    return joblib.load('modelo_autos_avanzado.pkl')
 
 try:
     model = load_model()
 except:
-    st.error("⚠ Error: No se encuentra el archivo 'modelo_autos.pkl'. Verifica que esté subido a GitHub.")
+    st.error("Sube el archivo 'modelo_autos_avanzado.pkl' a GitHub")
     st.stop()
 
-# --- 2. INTERFAZ: TÍTULO ---
-st.title('🚗 Calculadora de Precio de Autos')
-st.markdown("Ingresa los datos del vehículo para estimar su valor de venta.")
+st.title("🏎 Tasador de Autos con IA")
 
-# --- 3. FORMULARIO DE DATOS (Sidebar) ---
-st.sidebar.header('Datos del Auto')
+# 2. Formulario Inteligente
+st.sidebar.header("Características")
+
+# Necesitamos replicar las columnas exactas. 
+# Como no tenemos el CSV aquí, pondremos las opciones más comunes manualmente
+# o usaremos cajas de texto para simplificar.
 
 def user_input_features():
     # Variables Numéricas
-    anio = st.sidebar.slider('Año del Modelo', 2000, 2025, 2018)
-    kms = st.sidebar.number_input('Kilometraje (kms)', min_value=0, value=50000)
+    year = st.sidebar.slider('Año', 1990, 2025, 2015)
+    odometer = st.sidebar.number_input('Kilometraje', value=50000)
     
-    # Precio actual en concesionario (Present Price) - Dato importante para la predicción
-    precio_lista = st.sidebar.number_input('Precio de Lista Nuevo (en miles $)', min_value=1.0, value=10.0)
+    # Variables Categóricas (Basadas en cars-1k)
+    manufacturer = st.sidebar.selectbox('Fabricante', 
+        ['ford', 'honda', 'toyota', 'nissan', 'chevrolet', 'jeep', 'ram', 'gmc', 'dodge', 'bmw', 'mercedes', 'audi', 'otros'])
     
-    # Variables Categóricas (Texto)
-    combustible = st.sidebar.selectbox('Combustible', ['Petrol', 'Diesel', 'CNG'])
-    vendedor = st.sidebar.selectbox('Tipo de Vendedor', ['Dealer', 'Individual'])
-    transmision = st.sidebar.selectbox('Transmisión', ['Manual', 'Automatic'])
-    duenos = st.sidebar.selectbox('Dueños Anteriores', [0, 1, 3])
+    # El modelo es difícil de listar completo, usamos texto libre o genérico
+    car_model = st.sidebar.text_input('Modelo (ej: f-150, civic)', 'civic')
+    
+    condition = st.sidebar.selectbox('Condición', ['excellent', 'good', 'fair', 'like new', 'salvage'])
+    fuel = st.sidebar.selectbox('Combustible', ['gas', 'diesel', 'hybrid', 'electric'])
+    transmission = st.sidebar.selectbox('Transmisión', ['automatic', 'manual', 'other'])
+    drive = st.sidebar.selectbox('Tracción', ['4wd', 'fwd', 'rwd'])
+    type_car = st.sidebar.selectbox('Tipo', ['sedan', 'SUV', 'pickup', 'truck', 'coupe', 'hatchback'])
+    paint_color = st.sidebar.selectbox('Color', ['white', 'black', 'silver', 'grey', 'blue', 'red', 'custom'])
 
-    # --- PREPROCESAMIENTO INTERNO ---
-    # Convertimos texto a números igual que en el entrenamiento
-    # Combustible: Petrol=0, Diesel=1, CNG=2
-    fuel_map = {'Petrol': 0, 'Diesel': 1, 'CNG': 2}
-    
-    # Vendedor: Dealer=0, Individual=1
-    seller_map = {'Dealer': 0, 'Individual': 1}
-    
-    # Transmisión: Manual=0, Automatic=1
-    trans_map = {'Manual': 0, 'Automatic': 1}
-
-    # Crear el DataFrame con los nombres EXACTOS de las columnas de entrenamiento
+    # Crear DataFrame
     data = {
-        'Year': anio,
-        'Present_Price': precio_lista,
-        'Kms_Driven': kms,
-        'Fuel_Type': fuel_map[combustible],
-        'Seller_Type': seller_map[vendedor],
-        'Transmission': trans_map[transmision],
-        'Owner': duenos
+        'year': year,
+        'manufacturer': manufacturer,
+        'model': car_model,
+        'condition': condition,
+        'fuel': fuel,
+        'odometer': odometer,
+        'title_status': 'clean', # Valor por defecto
+        'transmission': transmission,
+        'drive': drive,
+        'type': type_car,
+        'paint_color': paint_color
     }
-    
     return pd.DataFrame(data, index=[0])
 
-# Capturar datos
-df_input = user_input_features()
+input_df = user_input_features()
 
-# Mostrar resumen al usuario
-st.subheader('Resumen del vehículo:')
-st.table(df_input)
+st.write("Datos ingresados:", input_df)
 
-# --- 4. BOTÓN DE PREDICCIÓN ---
-if st.button('💰 Calcular Precio'):
+if st.button("Predecir Precio"):
     try:
-        prediction = model.predict(df_input)
-        st.success(f"El precio estimado es: ${prediction[0]:,.2f} USD")
+        prediction = model.predict(input_df)
+        st.success(f"Precio estimado: ${prediction[0]:,.2f}")
     except Exception as e:
-        st.error(f"Error al predecir: {e}")
-        st.info("Nota: Revisa que el archivo 'modelo_autos.pkl' se haya creado con las mismas columnas.")
+        st.error(f"Error: {e}")
